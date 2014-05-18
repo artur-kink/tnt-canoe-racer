@@ -70,10 +70,19 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		
 		paint.setARGB(255, 255, 255, 255);
 		
+		//Draw tileset
+		for(int r = 0; r < MainActivity.thread.tilesHeight; r++){
+			for(int c = 0; c < MainActivity.thread.tilesWidth; c++){
+				//Draw code.
+			}
+		}
+		
+		//Draw gates
 		for(int i = 0; i < MainActivity.thread.gates.size(); i++){
 			MainActivity.thread.gates.get(i).draw(surface);
 		}
 		
+		//Draw player
 		Matrix transform = new Matrix();
 		
 		transform.reset();
@@ -109,7 +118,7 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			//Draw ups
 			surface.drawText("UPS: " + MainActivity.thread.ups, 20, 40, paint);
 			
-			surface.drawText("Gates: " + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter, 20, 60, paint);
+			surface.drawText("Gates: "  + MainActivity.thread.consecutiveGatesPassed + "/" + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter, 20, 60, paint);
 			
 			//Draw press position
 			surface.drawRect(new Rect(MainActivity.thread.touchX, MainActivity.thread.touchY - (int)MainActivity.thread.worldY,

@@ -2,12 +2,16 @@ package com.merccoder.canoeracer;
 
 import java.util.Vector;
 
+import com.google.android.gms.ads.*;
+
 import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
 
 /**
  * Main game thread.
@@ -33,6 +37,9 @@ public class GameThread extends Thread{
 	/** Thread running state. */
 	public boolean running;
 	
+	/** View for ads. */
+	private AdView adView;
+	
 	public int screenWidth;
 	public int screenHeight;
 	
@@ -54,8 +61,12 @@ public class GameThread extends Thread{
 	
 	public int gateCounter;
 	public int gatesPassed;
+	public int consecutiveGatesPassed;
+	public int lastGatePassed;
 	
 	public int tiles[][];
+	public int tilesWidth;
+	public int tilesHeight;
 	public int tileY;
 	
 	public GameThread(SurfaceHolder holder){
@@ -71,6 +82,29 @@ public class GameThread extends Thread{
 		playerAngle = 90;
 		
 		gates = new Vector<Gate>();
+		
+		//Create the ad
+	    adView = new AdView(MainActivity.context);
+	    adView.setAdSize(AdSize.BANNER);
+	    adView.setAdUnitId(MainActivity.context.getResources().getString(R.string.AdId));
+	    
+	    AdRequest.Builder adBuilder = new AdRequest.Builder()
+	        .addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+	    for(int i = 0; i < MainActivity.context.getResources().getStringArray(R.array.TestDevices).length; i++){
+	    	adBuilder.addTestDevice(MainActivity.context.getResources().getStringArray(R.array.TestDevices)[i]);
+	    }
+	    AdRequest adRequest = adBuilder.build();
+
+	    //Load ad
+	    if(adRequest != null){
+	    	adView.loadAd(adRequest);
+	    }
+	    adView.setId(1);
+	    
+	    LayoutParams params = new LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+		params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+		MainActivity.uiLayout.addView(adView, params);
 	}
 	
 	/**
@@ -103,22 +137,30 @@ public class GameThread extends Thread{
 		screenWidth = 800;//MainActivity.surface.getWidth();
 		screenHeight = 1280;//MainActivity.surface.getHeight();
 		
-		tiles = new int[1280/16][800/16];
+		tilesHeight = 1280/16 + 1;
+		tilesWidth = 800/16;
+		tiles = new int[tilesHeight][tilesWidth];
 		
 		screenMultiplier = MainActivity.surface.getWidth()/((float)screenWidth);
 		
 		playerX = screenWidth/2;
-		playerY = 0;
+		playerY = 10;
 		worldY = 0;
 		tileY = 0;
 		playerAnimationTime = 0;
 		playerFrame = 0;
 		
 		
-		gates.add(new Gate(100, screenHeight/2, 100, 4));
+		gates.add(new Gate(screenWidth/2, screenHeight/2, 100, 4));
 		gates.get(0).number = 1;
 		
+		touchX = screenWidth/2;
+		touchY = screenHeight/2;
+		
 		gateCounter = 1;
+		consecutiveGatesPassed = 0;
+		gatesPassed = 0;
+		lastGatePassed = 0;
 		
 		//Game loop.
 		while (running) {
@@ -135,6 +177,7 @@ public class GameThread extends Thread{
 			}
 			lastUpdate = System.currentTimeMillis();
 			
+			//Animate player.
 			if(lastUpdate - playerAnimationTime > 600){
 				playerAnimationTime = lastUpdate;
 				playerFrame++;
@@ -147,11 +190,11 @@ public class GameThread extends Thread{
 			float angleDelta = ((-(getAngle(playerX+32.0f, playerY+32.0f, (float)touchX, (float)touchY) - 180))
 				- playerAngle);
 			if(angleDelta > 180)
-				playerAngle += (angleDelta-360)*0.2f;
+				playerAngle += (angleDelta-360)*0.05f;
 			else if(angleDelta < -180)
-				playerAngle += (angleDelta+360)*0.2f;
+				playerAngle += (angleDelta+360)*0.05f;
 			else
-				playerAngle += angleDelta*0.2f;
+				playerAngle += angleDelta*0.05f;
 			
 			//Fix angles if not in [0-360)
 			if(playerAngle < 0){
@@ -161,30 +204,39 @@ public class GameThread extends Thread{
 			
 			//Move towards point.
 			playerX += Math.cos(Math.toRadians(playerAngle-90))*7;
-			playerY += Math.sin(Math.toRadians(playerAngle-90))*7;
+			playerY += Math.sin(Math.toRadians(playerAngle-90))*7 + 1.5f;
 			
-			if(playerY < 0)
-				playerY = 0;
-			
+			//Update world position.
 			if(playerY - worldY > screenHeight/2){
 				worldY = playerY - screenHeight/2;
 			}
 			
+			//Update gates
 			for(int i = 0; i < gates.size(); i++){
+				//Remove passed gates
 				if(gates.get(i).y < worldY){
 					gates.remove(i);
 					i--;
 				}else{
-					if(gates.get(i).passed == false){
+					if(gates.get(i).number > lastGatePassed && gates.get(i).passed == false){
 						if(Math.abs((playerY + 32) - gates.get(i).y) < 5
 							&& gates.get(i).x < playerX + 32 && gates.get(i).x + gates.get(i).width > playerX + 32){
 							gates.get(i).passed = true;
+							
+							if(lastGatePassed + 1 == gates.get(i).number){
+								consecutiveGatesPassed++;
+							}else{
+								consecutiveGatesPassed = 0;
+							}
+							
+							lastGatePassed = gates.get(i).number;
 							gatesPassed++;
 						}
 					}
 				}
 			}
 			
+			//Create new gates
 			if(gates.size() < 5){
 				gates.add(createNewGate());
 			}
@@ -204,11 +256,14 @@ public class GameThread extends Thread{
 
 	public Gate createNewGate(){
 		gateCounter++;
-		Gate gate = new Gate((int) (Math.random()*(screenWidth-100)), gates.lastElement().y + (screenHeight/3), 100, 4);
+		Gate gate = new Gate((int) ((Math.random()*(screenWidth-100))), (int) (gates.lastElement().y + (screenHeight/3) + Math.random()*200), 100, 4);
 		gate.number = gateCounter;
 		return gate;
 	}
 	
+	/**
+	 * Get angle between two points.
+	 */
 	public float getAngle(float x1, float y1, float x2, float y2) {
 	    return (float) Math.toDegrees(Math.atan2(x2 - x1, y2 - y1));
 	}

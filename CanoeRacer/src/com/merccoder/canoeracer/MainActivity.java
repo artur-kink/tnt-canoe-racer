@@ -16,6 +16,7 @@ public class MainActivity extends Activity {
 
 	public static GameSurface surface;
 	public static GameThread thread;
+	public static RelativeLayout uiLayout;
 	
 	public static MainActivity context;
 	
@@ -36,13 +37,13 @@ public class MainActivity extends Activity {
         
         pixelFont = Typeface.createFromAsset(MainActivity.context.getAssets(), "font/pixelart.ttf");
         
-        surface = new GameSurface(this);
-        
         //Create frame layout to contain game surface and ui layout.
       	FrameLayout baseLayout = new FrameLayout(this);
       	//Create ui layout.
-      	RelativeLayout uiLayout = new RelativeLayout(this);
+      	uiLayout = new RelativeLayout(this);
 
+      	surface = new GameSurface(this);
+      	
       	baseLayout.addView(surface);
       	baseLayout.addView(uiLayout);
       		
