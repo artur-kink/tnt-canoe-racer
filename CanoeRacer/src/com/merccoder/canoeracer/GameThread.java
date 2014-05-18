@@ -33,6 +33,11 @@ public class GameThread extends Thread{
 	/** Thread running state. */
 	public boolean running;
 	
+	public int screenWidth;
+	public int screenHeight;
+	
+	public float screenMultiplier;
+	
 	public long playerAnimationTime;
 	public int playerFrame;
 	
@@ -40,8 +45,18 @@ public class GameThread extends Thread{
 	public float playerX;
 	public float playerY;
 	
+	public float worldY;
+	
 	public int touchX;
 	public int touchY;
+	
+	public Vector<Gate> gates;
+	
+	public int gateCounter;
+	public int gatesPassed;
+	
+	public int tiles[][];
+	public int tileY;
 	
 	public GameThread(SurfaceHolder holder){
 		surfaceHolder = holder;
@@ -54,6 +69,8 @@ public class GameThread extends Thread{
 		playerX = 0;
 		playerY = 0;
 		playerAngle = 90;
+		
+		gates = new Vector<Gate>();
 	}
 	
 	/**
@@ -83,10 +100,25 @@ public class GameThread extends Thread{
 
 		Canvas gameCanvas = null;
 		
-		playerX = MainActivity.surface.getWidth()/2;
-		playerY = MainActivity.surface.getHeight()/2;
+		screenWidth = 800;//MainActivity.surface.getWidth();
+		screenHeight = 1280;//MainActivity.surface.getHeight();
+		
+		tiles = new int[1280/16][800/16];
+		
+		screenMultiplier = MainActivity.surface.getWidth()/((float)screenWidth);
+		
+		playerX = screenWidth/2;
+		playerY = 0;
+		worldY = 0;
+		tileY = 0;
 		playerAnimationTime = 0;
 		playerFrame = 0;
+		
+		
+		gates.add(new Gate(100, screenHeight/2, 100, 4));
+		gates.get(0).number = 1;
+		
+		gateCounter = 1;
 		
 		//Game loop.
 		while (running) {
@@ -127,8 +159,35 @@ public class GameThread extends Thread{
 			}else if(playerAngle > 360)
 				playerAngle -= 360.0f;
 			
-			playerX += Math.cos(Math.toRadians(playerAngle-90))*3;
-			playerY += Math.sin(Math.toRadians(playerAngle-90))*3;
+			//Move towards point.
+			playerX += Math.cos(Math.toRadians(playerAngle-90))*7;
+			playerY += Math.sin(Math.toRadians(playerAngle-90))*7;
+			
+			if(playerY < 0)
+				playerY = 0;
+			
+			if(playerY - worldY > screenHeight/2){
+				worldY = playerY - screenHeight/2;
+			}
+			
+			for(int i = 0; i < gates.size(); i++){
+				if(gates.get(i).y < worldY){
+					gates.remove(i);
+					i--;
+				}else{
+					if(gates.get(i).passed == false){
+						if(Math.abs((playerY + 32) - gates.get(i).y) < 5
+							&& gates.get(i).x < playerX + 32 && gates.get(i).x + gates.get(i).width > playerX + 32){
+							gates.get(i).passed = true;
+							gatesPassed++;
+						}
+					}
+				}
+			}
+			
+			if(gates.size() < 5){
+				gates.add(createNewGate());
+			}
 			
 			//Update debug parameters.
 			if(BuildConfig.DEBUG){
@@ -143,6 +202,13 @@ public class GameThread extends Thread{
 		}
 	}
 
+	public Gate createNewGate(){
+		gateCounter++;
+		Gate gate = new Gate((int) (Math.random()*(screenWidth-100)), gates.lastElement().y + (screenHeight/3), 100, 4);
+		gate.number = gateCounter;
+		return gate;
+	}
+	
 	public float getAngle(float x1, float y1, float x2, float y2) {
 	    return (float) Math.toDegrees(Math.atan2(x2 - x1, y2 - y1));
 	}
@@ -163,8 +229,8 @@ public class GameThread extends Thread{
 		//Record current touch location.
 		if(event.getAction() == MotionEvent.ACTION_DOWN ||
 			event.getAction() == MotionEvent.ACTION_MOVE){
-			touchX = (int) event.getX();
-			touchY = (int) event.getY();
+			touchX = (int) (event.getX()/screenMultiplier);
+			touchY = (int) ((event.getY()/screenMultiplier) + worldY);
 		}
 	}
 }

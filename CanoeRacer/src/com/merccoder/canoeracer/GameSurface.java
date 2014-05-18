@@ -2,6 +2,7 @@ package com.merccoder.canoeracer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -25,6 +26,9 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 	
 	public static Bitmap canoe;
 	
+	public static Canvas surface;
+	public static Bitmap surfaceBitmap;
+	
 	public GameSurface(Context context){
 		super(context);
 		getHolder().addCallback(this);
@@ -34,6 +38,10 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		setFocusable(true);
 		
 		canoe = BitmapFactory.decodeResource(getResources(), R.drawable.canoe);
+		
+		surface = new Canvas();
+		surfaceBitmap = Bitmap.createBitmap(800, 1280, Config.ARGB_8888);
+		surface.setBitmap(surfaceBitmap);
 	}
 	
 
@@ -58,23 +66,29 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		//Clear screen
 		Paint paint = new Paint();
 		paint.setARGB(255, 0, 0, 255);
-		canvas.drawPaint(paint);
+		surface.drawPaint(paint);
 		
 		paint.setARGB(255, 255, 255, 255);
+		
+		for(int i = 0; i < MainActivity.thread.gates.size(); i++){
+			MainActivity.thread.gates.get(i).draw(surface);
+		}
 		
 		Matrix transform = new Matrix();
 		
 		transform.reset();
-		transform.setTranslate(MainActivity.thread.playerX, MainActivity.thread.playerY);
+		transform.setTranslate(MainActivity.thread.playerX, MainActivity.thread.playerY - MainActivity.thread.worldY);
 		transform.preRotate(MainActivity.thread.playerAngle, 32, 32);
 		
-		canvas.save();
-		canvas.setMatrix(transform);
-		canvas.drawBitmap(canoe,
+		surface.save();
+		surface.setMatrix(transform);
+		surface.drawBitmap(canoe,
 			new Rect(MainActivity.thread.playerFrame*64, 0, MainActivity.thread.playerFrame*64+64, 64),
 			new Rect(0, 0, 64, 64),
 			paint);
-		canvas.restore();
+		surface.restore();
+		
+		
 		
 		//Debug draw.
 		if(BuildConfig.DEBUG){
@@ -90,18 +104,22 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			//Draw fps
 			paint.setTextSize(20);
 			paint.setARGB(128, 255, 255, 255);
-			canvas.drawText("FPS: " + fps, 20, 20, paint);
+			surface.drawText("FPS: " + fps, 20, 20, paint);
 			
 			//Draw ups
-			canvas.drawText("UPS: " + MainActivity.thread.ups, 20, 40, paint);
+			surface.drawText("UPS: " + MainActivity.thread.ups, 20, 40, paint);
 			
-			canvas.drawText("Player Angle: " + MainActivity.thread.playerAngle, 20, 60, paint);
-			canvas.drawText((int)MainActivity.thread.playerX + "x" + (int)MainActivity.thread.playerY, 20, 80, paint);
+			surface.drawText("Gates: " + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter, 20, 60, paint);
 			
 			//Draw press position
-			canvas.drawRect(new Rect(MainActivity.thread.touchX, MainActivity.thread.touchY,
-				MainActivity.thread.touchX + 5, MainActivity.thread.touchY + 5), paint);
+			surface.drawRect(new Rect(MainActivity.thread.touchX, MainActivity.thread.touchY - (int)MainActivity.thread.worldY,
+				MainActivity.thread.touchX + 5, MainActivity.thread.touchY - (int)MainActivity.thread.worldY + 5), paint);
 		}
+		paint.setARGB(255, 255, 255, 255);
+		
+		canvas.drawBitmap(surfaceBitmap,
+			new Rect(0, 0, 800, 1280),
+			new Rect(0, 0, getWidth(), getHeight()), paint);
 	}
 
 

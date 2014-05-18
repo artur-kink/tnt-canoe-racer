@@ -1,6 +1,7 @@
 package com.merccoder.canoeracer;
 
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +19,8 @@ public class MainActivity extends Activity {
 	
 	public static MainActivity context;
 	
+	public static Typeface pixelFont;
+	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -30,6 +33,8 @@ public class MainActivity extends Activity {
         //Set as full screen and set main view to GameSurface.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        pixelFont = Typeface.createFromAsset(MainActivity.context.getAssets(), "font/pixelart.ttf");
         
         surface = new GameSurface(this);
         
