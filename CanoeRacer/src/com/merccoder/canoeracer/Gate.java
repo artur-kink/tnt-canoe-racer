@@ -13,6 +13,7 @@ public class Gate {
 	public int width;
 	public int height;
 	
+	public boolean reverse;
 	public boolean passed;
 	public int number;
 	
@@ -24,6 +25,11 @@ public class Gate {
 		height = h;
 		
 		passed = false;
+		if(Math.random() > 0.75){
+			reverse = true;
+		}else{
+			reverse = false;
+		}
 	}
 	
 	public void draw(Canvas canvas){
@@ -36,5 +42,9 @@ public class Gate {
 		paint.setTextSize(13);
 		paint.setTypeface(MainActivity.pixelFont);
 		canvas.drawText("" + number, x + 1, (int) (y - MainActivity.thread.worldY) + 12, paint);
+		
+		if(reverse){
+			canvas.drawText("R", x + width + 1, (int) (y - MainActivity.thread.worldY) + 12, paint);
+		}
 	}
 }

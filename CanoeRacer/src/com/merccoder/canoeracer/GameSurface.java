@@ -1,5 +1,7 @@
 package com.merccoder.canoeracer;
 
+import com.merccoder.canoeracer.GameThread.TileType;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -48,6 +50,7 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 	@Override
 	public void surfaceCreated(SurfaceHolder arg0) {
 		if(!MainActivity.thread.isAlive()){
+			MainActivity.thread.initGame();
 			MainActivity.thread.setRunning(true);
 			MainActivity.thread.start();
 		}
@@ -73,7 +76,19 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		//Draw tileset
 		for(int r = 0; r < MainActivity.thread.tilesHeight; r++){
 			for(int c = 0; c < MainActivity.thread.tilesWidth; c++){
-				//Draw code.
+				if(MainActivity.thread.tiles[r][c] == TileType.Grass){
+					paint.setARGB(255, 0, 255, 0);
+					surface.drawRect(
+						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+				}else if(MainActivity.thread.tiles[r][c] == TileType.Rapid){
+					paint.setARGB(128, 255, 255, 255);
+					surface.drawRect(
+						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+				}else if(MainActivity.thread.tiles[r][c] == TileType.Stone){
+					paint.setARGB(255, 64, 64, 64);
+					surface.drawRect(
+						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+				}
 			}
 		}
 		
@@ -96,8 +111,6 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			new Rect(0, 0, 64, 64),
 			paint);
 		surface.restore();
-		
-		
 		
 		//Debug draw.
 		if(BuildConfig.DEBUG){
