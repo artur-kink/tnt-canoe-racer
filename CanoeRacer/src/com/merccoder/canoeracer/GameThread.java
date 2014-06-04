@@ -9,9 +9,11 @@ import com.google.android.gms.ads.AdView;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -77,6 +79,8 @@ public class GameThread extends Thread
 	public int lastGatePassed;
 	public int nextGatePosition;
 	
+	public Vector<Item> items;
+	
 	public enum TileType{
 		Water,
 		Grass,
@@ -109,6 +113,10 @@ public class GameThread extends Thread
 	private Button achievementsButton;
 	private Button optionsButton;
 	
+	public Point playerPoint1;
+	public Point playerPoint2;
+	public Point playerPoint3;
+	
 	public GameThread(SurfaceHolder holder){
 		surfaceHolder = holder;
 
@@ -122,6 +130,8 @@ public class GameThread extends Thread
 		playerAngle = 90;
 		
 		gates = new Vector<Gate>();
+		
+		items = new Vector<Item>();
 		
 		//Create the ad
 	    adView = new AdView(MainActivity.context);
@@ -254,6 +264,8 @@ public class GameThread extends Thread
 		
 		screenMultiplier = MainActivity.surface.getWidth()/((float)screenWidth);
 		
+		long itemSpawnTime = 0;
+		
 		//Game loop.
 		while (running) {
 			
@@ -269,14 +281,31 @@ public class GameThread extends Thread
 			}
 			lastUpdate = System.currentTimeMillis();
 			
-			
-			
 			if(currentScreen == Screen.GAME){
+				
+				//Spawn random item based on probability
+				if(items.size() < 5){
+					if(lastUpdate - itemSpawnTime > 5000){
+						itemSpawnTime = lastUpdate;
+						if(Math.random() > 0.5) 
+							items.add(new Item(screenWidth/2, worldY));
+					}
+				}
+				
+				//Update item state
+				for(int i = 0; i < items.size(); i++){
+					items.get(i).update();
+					if(items.get(i).y > worldY + screenHeight*2){
+						items.remove(i);
+						i--;
+					}
+				}
+				
 				//Animate player.
-				if(lastUpdate - playerAnimationTime > 600){
+				if(lastUpdate - playerAnimationTime > 70){
 					playerAnimationTime = lastUpdate;
 					playerFrame++;
-					if(playerFrame > 1){
+					if(playerFrame > 7){
 						playerFrame = 0;
 					}
 				}
@@ -297,25 +326,43 @@ public class GameThread extends Thread
 				}else if(playerAngle > 360)
 					playerAngle -= 360.0f;
 				
-				//Check collision.
-				float playerXTip = (float) (playerX + 32 + Math.cos(Math.toRadians(playerAngle-90))*7);
-				float playerYTip1 = (float) (playerY + 4 + Math.sin(Math.toRadians(playerAngle-90))*7 + 1.5f) - worldY;
-				float playerYTip2 = (float) (playerY + 60 + Math.sin(Math.toRadians(playerAngle-90))*7 + 1.5f) - worldY;
 				
-				if(playerYTip1 > 0 && playerYTip2 > 0){
-					if(tiles[(int) (playerYTip1/16)][(int) (playerXTip/16)] == TileType.Water &&
-						tiles[(int) (playerYTip2/16)][(int) (playerXTip/16)] == TileType.Water){
+				//Check collision.
+				Matrix collisionMatrix = new Matrix();
+				collisionMatrix.setTranslate(playerX, playerY - worldY);
+				collisionMatrix.preRotate(playerAngle + 180, 32, 32);
+				
+				RectF collisionRect = new RectF(31, 56, 33, 60);
+				collisionMatrix.mapRect(collisionRect);
+				playerPoint1 = new Point((int)collisionRect.left, (int)collisionRect.top);
+				
+				collisionRect = new RectF(31, 8, 33, 12);
+				collisionMatrix.mapRect(collisionRect);
+				playerPoint2 = new Point((int)collisionRect.left, (int)collisionRect.top);
+				
+				collisionRect = new RectF(31, 31, 33, 33);
+				collisionMatrix.mapRect(collisionRect);
+				playerPoint3 = new Point((int)collisionRect.left, (int)collisionRect.top);
+				
+				//Check for collision with map
+				if(playerPoint1.y > 0 && playerPoint2.y > 0){
+					
+					TileType tile1 = tiles[(int) (playerPoint1.y/16)][(int) (playerPoint1.x/16)];
+					TileType tile2 = tiles[(int) (playerPoint2.y/16)][(int) (playerPoint2.x/16)];
+					TileType tile3 = tiles[(int) (playerPoint3.y/16)][(int) (playerPoint3.x/16)];
+					
+					if(tile1 == TileType.Water && tile2 == TileType.Water && tile3 == TileType.Water){
 						//Move towards point.
 						playerX += Math.cos(Math.toRadians(playerAngle-90))*7;
 						playerY += Math.sin(Math.toRadians(playerAngle-90))*7 + 1.5f;
-					}else if((tiles[(int) (playerYTip1/16)][(int) (playerXTip/16)] == TileType.Rapid ||
-						tiles[(int) (playerYTip1/16)][(int) (playerXTip/16)] == TileType.Water) &&
-						(tiles[(int) (playerYTip2/16)][(int) (playerXTip/16)] == TileType.Rapid ||
-						tiles[(int) (playerYTip2/16)][(int) (playerXTip/16)] == TileType.Water)){
+					}else if((tile1 == TileType.Rapid || tile1 == TileType.Water) &&
+							(tile2 == TileType.Rapid || tile2 == TileType.Water) &&
+							(tile3 == TileType.Rapid || tile3 == TileType.Water)){
 						//Move towards point.
 						playerX += Math.cos(Math.toRadians(playerAngle-90))*7;
 						playerY += Math.sin(Math.toRadians(playerAngle-90))*7 + 5f;
 					}else{
+						
 						if(consecutiveGatesPassed > 0){
 							MainActivity.context.submitScore(R.string.leaderboard_consecutive_gates_passed, consecutiveGatesPassed);
 						}
@@ -330,6 +377,18 @@ public class GameThread extends Thread
 						}
 						gameExists = false;
 						setScreen(Screen.START);
+					}
+				}
+				
+				//Check for collision with items
+				for(int i = 0; i < items.size(); i++){
+					Rect itemRect = new Rect((int)items.get(i).x, (int)items.get(i).y, (int)items.get(i).x + items.get(i).width, (int)items.get(i).y + items.get(i).height);
+					if(itemRect.contains(playerPoint1.x, playerPoint1.y) ||
+						itemRect.contains(playerPoint2.x, playerPoint2.y)){
+						//Pickup code here
+						
+						items.remove(i);
+						i--;
 					}
 				}
 				
@@ -372,6 +431,9 @@ public class GameThread extends Thread
 									
 									if(lastGatePassed + 1 == gates.get(i).number){
 										consecutiveGatesPassed++;
+										if(consecutiveGatesPassed == 25){
+											MainActivity.context.giveAchievement(R.string.achievement_making_progress);
+										}
 									}else{
 										if(consecutiveGatesPassed > 0){
 											MainActivity.context.submitScore(R.string.leaderboard_consecutive_gates_passed, consecutiveGatesPassed);
@@ -381,6 +443,10 @@ public class GameThread extends Thread
 									
 									lastGatePassed = gates.get(i).number;
 									gatesPassed++;
+									
+									if(gatesPassed == 500){
+										MainActivity.context.giveAchievement(R.string.achievement_going_the_distance);
+									}
 								}
 							}
 						}
@@ -409,6 +475,12 @@ public class GameThread extends Thread
 
 	public Gate createNewGate(){
 		gateCounter++;
+		
+		if(gateCounter == 100){
+			if(gatesPassed == 0){
+				MainActivity.context.giveAchievement(R.string.achievement_where_am_i_going);
+			}
+		}
 		
 		int yTile = (int) ((nextGatePosition - worldY)/16);
 		

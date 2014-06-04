@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Matrix.ScaleToFit;
 import android.graphics.Paint;
@@ -97,12 +98,17 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			MainActivity.thread.gates.get(i).draw(surface);
 		}
 		
+		//Draw items
+		for(int i = 0; i < MainActivity.thread.items.size(); i++){
+			MainActivity.thread.items.get(i).draw(surface);
+		}
+		
 		//Draw player
 		Matrix transform = new Matrix();
 		
 		transform.reset();
 		transform.setTranslate(MainActivity.thread.playerX, MainActivity.thread.playerY - MainActivity.thread.worldY);
-		transform.preRotate(MainActivity.thread.playerAngle, 32, 32);
+		transform.preRotate(MainActivity.thread.playerAngle + 180, 32, 32);
 		
 		surface.save();
 		surface.setMatrix(transform);
@@ -111,6 +117,17 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			new Rect(0, 0, 64, 64),
 			paint);
 		surface.restore();
+		
+		paint.setARGB(255, 255, 0, 0);
+		surface.drawRect(new Rect((int)MainActivity.thread.playerPoint1.x, (int)MainActivity.thread.playerPoint1.y,
+			(int)MainActivity.thread.playerPoint1.x + 3, (int)MainActivity.thread.playerPoint1.y + 3), paint);
+		
+		surface.drawRect(new Rect((int)MainActivity.thread.playerPoint2.x, (int)MainActivity.thread.playerPoint2.y,
+				(int)MainActivity.thread.playerPoint2.x + 3, (int)MainActivity.thread.playerPoint2.y + 3), paint);
+		
+		surface.drawRect(new Rect((int)MainActivity.thread.playerPoint3.x, (int)MainActivity.thread.playerPoint3.y,
+				(int)MainActivity.thread.playerPoint3.x + 3, (int)MainActivity.thread.playerPoint3.y + 3), paint);
+		
 		
 		//Debug draw.
 		if(BuildConfig.DEBUG){
