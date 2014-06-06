@@ -224,6 +224,8 @@ public class GameThread extends Thread
 		gates.get(0).number = 1;
 		nextGatePosition = screenHeight;
 		
+		items.clear();
+		
 		touchX = screenWidth/2;
 		touchY = screenHeight/2;
 		
@@ -255,11 +257,11 @@ public class GameThread extends Thread
 
 		Canvas gameCanvas = null;
 		
-		screenWidth = 800;//MainActivity.surface.getWidth();
-		screenHeight = 1280;//MainActivity.surface.getHeight();
+		screenWidth = 640;//MainActivity.surface.getWidth();
+		screenHeight = 1024;//MainActivity.surface.getHeight();
 		
-		tilesHeight = 1280/16 + 1;
-		tilesWidth = 800/16;
+		tilesHeight = 1024/16 + 1;
+		tilesWidth = 640/16;
 		tiles = new TileType[tilesHeight][tilesWidth];
 		
 		screenMultiplier = MainActivity.surface.getWidth()/((float)screenWidth);
@@ -284,8 +286,8 @@ public class GameThread extends Thread
 			if(currentScreen == Screen.GAME){
 				
 				//Spawn random item based on probability
-				if(items.size() < 5){
-					if(lastUpdate - itemSpawnTime > 5000){
+				if(items.size() < 105){
+					if(lastUpdate - itemSpawnTime > 50){
 						itemSpawnTime = lastUpdate;
 						if(Math.random() > 0.5) 
 							items.add(new Item(screenWidth/2, worldY));
@@ -373,7 +375,7 @@ public class GameThread extends Thread
 						}
 						
 						if(worldY > 0){
-							MainActivity.context.submitScore(R.string.leaderboard_distance_travelled, gatesPassed);
+							MainActivity.context.submitScore(R.string.leaderboard_distance_travelled, (int)worldY);
 						}
 						gameExists = false;
 						setScreen(Screen.START);
@@ -383,8 +385,9 @@ public class GameThread extends Thread
 				//Check for collision with items
 				for(int i = 0; i < items.size(); i++){
 					Rect itemRect = new Rect((int)items.get(i).x, (int)items.get(i).y, (int)items.get(i).x + items.get(i).width, (int)items.get(i).y + items.get(i).height);
-					if(itemRect.contains(playerPoint1.x, playerPoint1.y) ||
-						itemRect.contains(playerPoint2.x, playerPoint2.y)){
+					if(itemRect.contains(playerPoint1.x, (int) (playerPoint1.y + worldY)) ||
+						itemRect.contains(playerPoint2.x, (int) (playerPoint2.y + worldY)) ||
+						itemRect.contains(playerPoint3.x, (int) (playerPoint3.y + worldY))){
 						//Pickup code here
 						
 						items.remove(i);

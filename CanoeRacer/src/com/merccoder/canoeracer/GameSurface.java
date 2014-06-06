@@ -28,6 +28,9 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 	private long lastDrawCallReset;
 	
 	public static Bitmap canoe;
+	public static Bitmap water[];
+	public int waterFrame;
+	public long waterUpdateTime;
 	
 	public static Canvas surface;
 	public static Bitmap surfaceBitmap;
@@ -41,9 +44,28 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		setFocusable(true);
 		
 		canoe = BitmapFactory.decodeResource(getResources(), R.drawable.canoe);
+		water = new Bitmap[16];
+		water[0] = BitmapFactory.decodeResource(getResources(), R.drawable.water0);
+		water[1] = BitmapFactory.decodeResource(getResources(), R.drawable.water1);
+		water[2] = BitmapFactory.decodeResource(getResources(), R.drawable.water2);
+		water[3] = BitmapFactory.decodeResource(getResources(), R.drawable.water3);
+		water[4] = BitmapFactory.decodeResource(getResources(), R.drawable.water4);
+		water[5] = BitmapFactory.decodeResource(getResources(), R.drawable.water5);
+		water[6] = BitmapFactory.decodeResource(getResources(), R.drawable.water6);
+		water[7] = BitmapFactory.decodeResource(getResources(), R.drawable.water7);
+		water[8] = BitmapFactory.decodeResource(getResources(), R.drawable.water8);
+		water[9] = BitmapFactory.decodeResource(getResources(), R.drawable.water9);
+		water[10] = BitmapFactory.decodeResource(getResources(), R.drawable.water10);
+		water[11] = BitmapFactory.decodeResource(getResources(), R.drawable.water11);
+		water[12] = BitmapFactory.decodeResource(getResources(), R.drawable.water12);
+		water[13] = BitmapFactory.decodeResource(getResources(), R.drawable.water13);
+		water[14] = BitmapFactory.decodeResource(getResources(), R.drawable.water14);
+		water[15] = BitmapFactory.decodeResource(getResources(), R.drawable.water15);
+		
+		waterFrame = 0;
 		
 		surface = new Canvas();
-		surfaceBitmap = Bitmap.createBitmap(800, 1280, Config.ARGB_8888);
+		surfaceBitmap = Bitmap.createBitmap(640, 1024, Config.ARGB_8888);
 		surface.setBitmap(surfaceBitmap);
 	}
 	
@@ -67,28 +89,47 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 	 */
 	protected void onDraw(Canvas canvas) {
 		
-		//Clear screen
 		Paint paint = new Paint();
-		paint.setARGB(255, 0, 0, 255);
-		surface.drawPaint(paint);
-		
 		paint.setARGB(255, 255, 255, 255);
 		
+		//Update water animation.
+		if(System.currentTimeMillis() - waterUpdateTime > 100){
+			waterFrame++;
+			if(waterFrame > 15)
+				waterFrame = 0;
+			waterUpdateTime = System.currentTimeMillis();
+		}
+		
+		
+		Rect waterRect = new Rect((waterFrame%8)*16, (waterFrame/8)*16, (waterFrame%8)*16 + 16, (waterFrame/8)*16+16);
 		//Draw tileset
 		for(int r = 0; r < MainActivity.thread.tilesHeight; r++){
 			for(int c = 0; c < MainActivity.thread.tilesWidth; c++){
-				if(MainActivity.thread.tiles[r][c] == TileType.Grass){
-					paint.setARGB(255, 0, 255, 0);
-					surface.drawRect(
-						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
-				}else if(MainActivity.thread.tiles[r][c] == TileType.Rapid){
-					paint.setARGB(128, 255, 255, 255);
-					surface.drawRect(
-						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
-				}else if(MainActivity.thread.tiles[r][c] == TileType.Stone){
-					paint.setARGB(255, 64, 64, 64);
-					surface.drawRect(
-						new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+				if(MainActivity.thread.tiles[r][c] == null)
+					continue;
+				
+				switch(MainActivity.thread.tiles[r][c]){
+					case Grass:
+						paint.setARGB(255, 0, 255, 0);
+						surface.drawRect(
+							new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+						break;
+					case Rapid:
+						paint.setARGB(128, 255, 255, 255);
+						surface.drawRect(
+							new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+						break;
+					case Stone:
+						paint.setARGB(255, 64, 64, 64);
+						surface.drawRect(
+							new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
+						break;
+					case Water:
+						paint.setARGB(255, 255, 255, 255);
+						surface.drawBitmap(water[waterFrame], c*16, r*16 - (int)MainActivity.thread.tileY, paint);
+						break;
+					default:
+						break;
 				}
 			}
 		}
@@ -157,7 +198,7 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		paint.setARGB(255, 255, 255, 255);
 		
 		canvas.drawBitmap(surfaceBitmap,
-			new Rect(0, 0, 800, 1280),
+			new Rect(0, 0, 640, 1024),
 			new Rect(0, 0, getWidth(), getHeight()), paint);
 	}
 
