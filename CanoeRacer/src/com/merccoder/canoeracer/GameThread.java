@@ -23,6 +23,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
+import android.widget.TextView;
 
 /**
  * Main game thread.
@@ -111,7 +112,9 @@ public class GameThread extends Thread
 	private Button resumeButton;
 	private Button highscoresButton;
 	private Button achievementsButton;
-	private Button optionsButton;
+	private Button soundButton;
+	
+	private RelativeLayout gameScreen;
 	
 	public Point playerPoint1;
 	public Point playerPoint2;
@@ -176,9 +179,12 @@ public class GameThread extends Thread
 	    achievementsButton = (Button) startScreen.findViewById(R.id.achievements_button);
 	    achievementsButton.setOnClickListener(this);
 	    
-		optionsButton = (Button) startScreen.findViewById(R.id.options_button);
-		optionsButton.setOnClickListener(this);
+	    soundButton = (Button) startScreen.findViewById(R.id.sound_button);
+	    soundButton.setOnClickListener(this);
 		
+	    
+	    gameScreen = (RelativeLayout) inflater.inflate(R.layout.game_screen, uiLayout);
+
 		setRunning(false);
 		gameExists = false;
 	}
@@ -286,21 +292,23 @@ public class GameThread extends Thread
 			if(currentScreen == Screen.GAME){
 				
 				//Spawn random item based on probability
-				if(items.size() < 105){
+				if(items.size() < 5){
 					if(lastUpdate - itemSpawnTime > 50){
 						itemSpawnTime = lastUpdate;
-						if(Math.random() > 0.5) 
-							items.add(new Item(screenWidth/2, worldY));
+						if(Math.random() > 0.5){
+							items.add(new Item(screenWidth/2 + (int)(Math.random()*128-64), worldY));
+						}
 					}
 				}
 				
 				//Update item state
 				for(int i = 0; i < items.size(); i++){
-					items.get(i).update();
-					if(items.get(i).y > worldY + screenHeight*2){
+					if(items.get(i).y >= worldY + screenHeight*2){
 						items.remove(i);
 						i--;
+						continue;
 					}
+					items.get(i).update();
 				}
 				
 				//Animate player.
@@ -472,6 +480,7 @@ public class GameThread extends Thread
 					}
 				}
 				drawCall(gameCanvas);
+				
 			}
 		}
 	}
@@ -568,6 +577,8 @@ public class GameThread extends Thread
 		 			}
 		 			
 		 			uiLayout.addView(startScreen, new LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+		 		}else if(currentScreen == Screen.GAME){
+		 			uiLayout.addView(gameScreen, new LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
 		 		}
 		    }
 		});
@@ -588,6 +599,13 @@ public class GameThread extends Thread
 				MainActivity.context.openHighscores();
 			}else if(v == achievementsButton){
 				MainActivity.context.openAchievements();
+			}else if(v == soundButton){
+				 SoundOn = !SoundOn;
+				 if(SoundOn){
+					 soundButton.setText("Sound On");
+				 }else{
+					 soundButton.setText("Sound Off");
+				 }
 			}
 		}
 	}

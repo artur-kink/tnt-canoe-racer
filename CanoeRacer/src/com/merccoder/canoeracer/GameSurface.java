@@ -93,7 +93,7 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		paint.setARGB(255, 255, 255, 255);
 		
 		//Update water animation.
-		if(System.currentTimeMillis() - waterUpdateTime > 100){
+		if(System.currentTimeMillis() - waterUpdateTime > 70){
 			waterFrame++;
 			if(waterFrame > 15)
 				waterFrame = 0;
@@ -115,6 +115,9 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 							new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
 						break;
 					case Rapid:
+						paint.setARGB(255, 255, 255, 255);
+						surface.drawBitmap(water[15-waterFrame], c*16, r*16 - (int)MainActivity.thread.tileY, paint);
+						
 						paint.setARGB(128, 255, 255, 255);
 						surface.drawRect(
 							new Rect(c*16, r*16 - (int)MainActivity.thread.tileY, c*16 + 16, r*16 + 16 - (int)MainActivity.thread.tileY), paint);
@@ -126,7 +129,7 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 						break;
 					case Water:
 						paint.setARGB(255, 255, 255, 255);
-						surface.drawBitmap(water[waterFrame], c*16, r*16 - (int)MainActivity.thread.tileY, paint);
+						surface.drawBitmap(water[15-waterFrame], c*16, r*16 - (int)MainActivity.thread.tileY, paint);
 						break;
 					default:
 						break;
@@ -169,6 +172,27 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 		surface.drawRect(new Rect((int)MainActivity.thread.playerPoint3.x, (int)MainActivity.thread.playerPoint3.y,
 				(int)MainActivity.thread.playerPoint3.x + 3, (int)MainActivity.thread.playerPoint3.y + 3), paint);
 		
+		Paint smallPaint = new Paint();
+		smallPaint.setTextSize(16);
+		Paint largePaint = new Paint();
+		largePaint.setTextSize(32);
+		
+		float titleSize = smallPaint.measureText("Distance");
+		float bottomSize = largePaint.measureText("" + (int)MainActivity.thread.worldY);
+		if(titleSize > bottomSize){
+			surface.drawText("Distance", 5, 1024 - 32 - 5, smallPaint);
+			surface.drawText("" + (int)MainActivity.thread.worldY, 5 + titleSize/2 - bottomSize/2, 1024 - 5, largePaint);
+		}else{
+			surface.drawText("Distance", 5 + bottomSize/2 - titleSize/2, 1024 - 32 - 5, smallPaint);
+			surface.drawText("" + (int)MainActivity.thread.worldY, 5, 1024 - 5, largePaint);
+		}
+		
+		titleSize = smallPaint.measureText("Gates");
+		bottomSize = largePaint.measureText("" + MainActivity.thread.consecutiveGatesPassed + "/" + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter);
+		
+		surface.drawText("Gates", 640/2 - titleSize/2, 1024 - 32 - 5, smallPaint);
+		surface.drawText("" + MainActivity.thread.consecutiveGatesPassed + "/" + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter,
+			640/2 - bottomSize/2, 1024 - 5, largePaint);
 		
 		//Debug draw.
 		if(BuildConfig.DEBUG){
@@ -188,8 +212,6 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback  
 			
 			//Draw ups
 			surface.drawText("UPS: " + MainActivity.thread.ups, 20, 40, paint);
-			
-			surface.drawText("Gates: "  + MainActivity.thread.consecutiveGatesPassed + "/" + MainActivity.thread.gatesPassed + "/" + MainActivity.thread.gateCounter, 20, 60, paint);
 			
 			//Draw press position
 			surface.drawRect(new Rect(MainActivity.thread.touchX, MainActivity.thread.touchY - (int)MainActivity.thread.worldY,
